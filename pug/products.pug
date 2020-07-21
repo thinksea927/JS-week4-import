@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+html(lang="en")
+    head
+        meta(charset="UTF-8")
+        meta(name="viewport", content="width=device-width, initial-scale=1.0")
+        link(rel="stylesheet", href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" crossorigin="anonymous")
+        //- link(rel="stylesheet", href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Roboto+Mono&display=swap")
+        //- link(rel="stylesheet", href="https://fonts.googleapis.com/icon?family=Material+Icons")
+        link(rel="stylesheet", href="css/all.css")
+        script(src="https://code.jquery.com/jquery-3.4.1.slim.min.js" crossorigin="anonymous")
+        script(src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" crossorigin="anonymous")
+        script(src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" crossorigin="anonymous")
+        script(src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js" )
+        script(src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js")
+        title products-import
+    body
+        #app.container.mt-3
+            .text-right.mt-4
+                button.btn.btn-primary(@click="openModal('new')") 建立新的產品
+            table.table.mt-4
+                thead
+                    tr
+                        th 分類
+                        th 產品名稱
+                        th 原價
+                        th 售價
+                        th 是否啟用
+                        th 編輯
+                tbody
+                    tr(v-for="item in products" :key="item.id")
+                        td {{ item.category}}
+                        td {{ item.title}}
+                        td.text-right {{item.origin_price}}
+                        td.text-right {{item.price}}
+                        td
+                            span.text-success(v-if="item.is_enabled") 啟用
+                            span(v-else) 未啟用
+                        td
+                            .btn-group
+                                button.btn.btn-outline-primary.btn-sm(@click="openModal('edit', item)") 編輯
+                                button.btn.btn-outline-danger.btn-sm(@click="openModal('delete', item)") 刪除
+            // pagination
+            pagination(:pages="pagination" @emit-pages="getProducts")
+            // Modal
+            #productModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='exampleModalLabel', aria-hidden='true')
+                .modal-dialog.modal-xl(role='document')
+                    .modal-content.border-0
+                        .modal-header.bg-dark.text-white
+                            h5#exampleModalLabel.modal-title
+                                span 新增產品
+                            button.close(type='button', data-dismiss='modal', aria-label='Close')
+                                span(aria-hidden='true') ×
+                        .modal-body
+                            .row
+                                .col-sm-4
+                                    .form-group
+                                        label(for='imageUrl') 輸入圖片網址
+                                        input#imageUrl.form-control(type='text', placeholder='請輸入圖片連結' ,v-model="tempProduct.imageUrl" )
+                                    img.img-fluid(alt='' ,:src="tempProduct.imageUrl")
+                                .col-sm-8
+                                    .form-group
+                                        label(for='title') 標題
+                                        input#title.form-control(v-model='tempProduct.title', type='text', placeholder='請輸入標題')
+                                    .form-row
+                                        .form-group.col-md-6
+                                            label(for='category') 分類
+                                            input#category.form-control(v-model='tempProduct.category', type='text', placeholder='請輸入分類')
+                                        .form-group.col-md-6
+                                            label(for='price') 單位
+                                            input#unit.form-control(v-model='tempProduct.unit', type='unit', placeholder='請輸入單位')
+                                    .form-row
+                                        .form-group.col-md-6
+                                            label(for='origin_price') 原價
+                                            input#origin_price.form-control(v-model='tempProduct.origin_price', type='number', placeholder='請輸入原價')
+                                        .form-group.col-md-6
+                                            label(for='price') 售價
+                                            input#price.form-control(v-model='tempProduct.price', type='number', placeholder='請輸入售價')
+                                    hr
+                                    .form-group
+                                        label(for='description') 產品描述
+                                        textarea#description.form-control(v-model='tempProduct.description', type='text', placeholder='請輸入產品描述')                       
+                                    .form-group
+                                        label(for='content') 說明內容
+                                        textarea#description.form-control(v-model='tempProduct.content', type='text', placeholder='請輸入說明內容')                       
+                                    .form-group
+                                        .form-check
+                                            input#is_enabled.form-check-input(v-model='tempProduct.is_enabled', type='checkbox', :true-value='1', :false-value='0')
+                                            label.form-check-label(for='is_enabled') 是否啟用
+                        .modal-footer
+                            button.btn.btn-outline-secondary(type='button', data-dismiss='modal') 取消
+                            button.btn.btn-primary(type='button', @click='updateProduct') 確認
+            #delProductModal.modal.fade(tabindex='-1', role='dialog', aria-labelledby='exampleModalLabel', aria-hidden='true')
+                .modal-dialog(role='document')
+                    .modal-content.border-0
+                        .modal-header.bg-danger.text-white
+                            h5#exampleModalLabel.modal-title
+                                span 刪除產品
+                            button.close(type='button', data-dismiss='modal', aria-label='Close')
+                                span(aria-hidden='true') ×
+                        .modal-body
+                            | 是否刪除
+                            strong.text-danger {{ tempProduct.title }}
+                            |  商品(刪除後將無法恢復)。
+                        .modal-footer
+                            button.btn.btn-outline-secondary(type='button', data-dismiss='modal') 取消
+                            button.btn.btn-danger(type='button', @click='delProduct') 確認刪除
+        //- script(src="./pagination.js")
+        //- script(type="text/x-template" id="pages")
+        //-     nav(aria-label='Page navigation example')
+        //-         ul.pagination
+        //-             li.page-item
+        //-                 a.page-link(href='#') Previous
+        //-             li.page-item(v-for="i in pages.total_pages" :key="i" :class="{active: pages.current_page === i}")
+        //-                 a.page-link(href='#' @click.prevent="emitPages(i)") {{i}}
+        //-             li.page-item
+        //-                 a.page-link(href='#') Next
+        //- script.
+        //-     Vue.component('pagination', {
+        //-         template: '#pages',
+        //-         props: ['pages'],
+        //-         methods: {
+        //-             emitPages(item){
+        //-                 this.$emit('emit-pages', item);
+
+        //-             },
+
+        //-         },
+        //-     });
+        script(src="./products.js" type="module")
+
+
